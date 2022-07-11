@@ -45,7 +45,7 @@ void test_d3d11()
             hr = HRESULT_CODE(hr);
         }
 
-        if (FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR) &error_mssg, 256, NULL) != 0)
+        if (FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, nullptr, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR) &error_mssg, 256, nullptr) != 0)
         {
             printf("D3D11 Device create FAILED: %x; %s\n", hr, error_mssg);
             LocalFree(error_mssg);
@@ -96,6 +96,9 @@ int __cdecl main(int argc, wchar_t *argv[])
     PCWSTR hardwareIds = L"IddSampleDriver\0\0";
     PCWSTR compatibleIds = L"IddSampleDriver\0\0";
 
+    // Lets run one test before we even create a SW device
+    test_d3d11();
+
     createInfo.cbSize = sizeof(createInfo);
     createInfo.pszzCompatibleIds = compatibleIds;
     createInfo.pszInstanceId = instanceId;
@@ -140,7 +143,7 @@ int __cdecl main(int argc, wchar_t *argv[])
 
         printf("SW Device created: %u\n", i);
 
-        Sleep(5000);
+        Sleep(2500);
 
         test_d3d11();
 
