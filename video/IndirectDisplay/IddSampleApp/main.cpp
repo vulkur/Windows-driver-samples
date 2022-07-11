@@ -6,6 +6,61 @@
 #include <conio.h>
 #include <wrl.h>
 
+#include <stdbool.h>
+
+#pragma warning(disable : 4201)
+#pragma warning(disable : 4324)
+
+#include <d3d11_4.h>
+#include <d3dcommon.h>
+#include <dxgi1_6.h>
+
+#pragma warning(default : 4201)
+#pragma warning(default : 4324)
+
+void test_d3d11()
+{
+    HRESULT hr = S_OK;
+
+    ID3D11Device* device = NULL;
+    ID3D11DeviceContext* device_ctx = NULL;
+
+    hr = D3D11CreateDevice(NULL,
+        D3D_DRIVER_TYPE_HARDWARE,
+        NULL,
+        D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+        NULL,
+        0,
+        D3D11_SDK_VERSION,
+        &device,
+        NULL,
+        &device_ctx);
+
+    if (FAILED(hr))
+    {
+        char* error_mssg = NULL;
+
+        if(FACILITY_WINDOWS == HRESULT_FACILITY(hr))
+        {
+            hr = HRESULT_CODE(hr);
+        }
+
+        if (FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR) &error_mssg, 256, NULL) != 0)
+        {
+            printf("D3D11 Device create FAILED: %x; %s\n", hr, error_mssg);
+            LocalFree(error_mssg);
+        }
+        else
+        {
+            printf("D3D11 Device create FAILED : %x\n", hr);
+        }
+    }
+    else
+    {
+        printf("D3D11 Device created\n");
+    }
+}
+
 VOID WINAPI
 CreationCallback(
     _In_ HSWDEVICE hSwDevice,
@@ -14,9 +69,13 @@ CreationCallback(
     _In_opt_ PCWSTR pszDeviceInstanceId
     )
 {
-    HANDLE hEvent = *(HANDLE*) pContext;
+    if (pContext)
+    {
+        HANDLE hEvent = *((HANDLE*) pContext);
 
-    SetEvent(hEvent);
+        SetEvent(hEvent);
+    }
+
     UNREFERENCED_PARAMETER(hSwDevice);
     UNREFERENCED_PARAMETER(hrCreateResult);
     UNREFERENCED_PARAMETER(pszDeviceInstanceId);
@@ -27,7 +86,7 @@ int __cdecl main(int argc, wchar_t *argv[])
     UNREFERENCED_PARAMETER(argc);
     UNREFERENCED_PARAMETER(argv);
 
-    HANDLE hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    HANDLE hEvent;
     HSWDEVICE hSwDevice;
     SW_DEVICE_CREATE_INFO createInfo = { 0 };
     PCWSTR description = L"Idd Sample Driver";
@@ -47,47 +106,48 @@ int __cdecl main(int argc, wchar_t *argv[])
                                  SWDeviceCapabilitiesSilentInstall |
                                  SWDeviceCapabilitiesDriverRequired;
 
-    // Create the device
-    HRESULT hr = SwDeviceCreate(L"IddSampleDriver",
-                                L"HTREE\\ROOT\\0",
-                                &createInfo,
-                                0,
-                                nullptr,
-                                CreationCallback,
-                                &hEvent,
-                                &hSwDevice);
-    if (FAILED(hr))
+    hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    if (!hEvent)
     {
-        printf("SwDeviceCreate failed with 0x%lx\n", hr);
-        return 1;
+        printf("Failed to create event");
+        return -1;
     }
 
-    // Wait for callback to signal that the device has been created
-    printf("Waiting for device to be created....\n");
-    DWORD waitResult = WaitForSingleObject(hEvent, 10*1000);
-    if (waitResult != WAIT_OBJECT_0)
-    {
-        printf("Wait for device creation failed\n");
-        return 1;
-    }
-    printf("Device created\n\n");
-    
-    // Now wait for user to indicate the device should be stopped
-    printf("Press 'x' to exit and destory the software device\n");
-    bool bExit = false;
-    do
-    {
-        // Wait for key press
-        int key = _getch();
 
-        if (key == 'x' || key == 'X')
+    for(DWORD i = 0; i < 200; i++)
+    {
+        // Create the device
+        HRESULT hr = SwDeviceCreate(L"IddSampleDriver",
+                                    L"HTREE\\ROOT\\0",
+                                    &createInfo,
+                                    0,
+                                    nullptr,
+                                    CreationCallback,
+                                    &hEvent,
+                                    &hSwDevice);
+        if (FAILED(hr))
         {
-            bExit = true;
+            printf("SwDeviceCreate failed with 0x%lx\n", hr);
+            return 1;
         }
-    }while (!bExit);
-    
-    // Stop the device, this will cause the sample to be unloaded
-    SwDeviceClose(hSwDevice);
+
+        DWORD waitResult = WaitForSingleObject(hEvent, 10*1000);
+        if (waitResult != WAIT_OBJECT_0)
+        {
+            printf("Wait for device creation failed\n");
+            return 1;
+        }
+
+        printf("SW Device created: %u\n", i);
+
+        Sleep(5000);
+
+        test_d3d11();
+
+        SwDeviceClose(hSwDevice);
+    }
+
+    CloseHandle(hEvent);
 
     return 0;
 }

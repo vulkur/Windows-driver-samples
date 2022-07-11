@@ -606,6 +606,7 @@ IndirectMonitorContext::IndirectMonitorContext(_In_ IDDCX_MONITOR Monitor) :
 IndirectMonitorContext::~IndirectMonitorContext()
 {
     m_ProcessingThread.reset();
+    IddCxMonitorDeparture(m_Monitor);
 }
 
 void IndirectMonitorContext::AssignSwapChain(IDDCX_SWAPCHAIN SwapChain, LUID RenderAdapter, HANDLE NewFrameEvent)
