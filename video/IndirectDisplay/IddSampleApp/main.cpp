@@ -116,8 +116,7 @@ int __cdecl main(int argc, wchar_t *argv[])
         return -1;
     }
 
-
-    for(DWORD i = 0; i < 200; i++)
+    for(DWORD i = 0; i < 25; i++)
     {
         // Create the device
         HRESULT hr = SwDeviceCreate(L"IddSampleDriver",
