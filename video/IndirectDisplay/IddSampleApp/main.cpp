@@ -1,3 +1,6 @@
+#include <errno.h>
+#include <stdlib.h>
+
 #include <iostream>
 #include <vector>
 
@@ -81,10 +84,10 @@ CreationCallback(
     UNREFERENCED_PARAMETER(pszDeviceInstanceId);
 }
 
-int __cdecl main(int argc, wchar_t *argv[])
+int __cdecl main(int argc, char *argv[])
 {
-    UNREFERENCED_PARAMETER(argc);
-    UNREFERENCED_PARAMETER(argv);
+    DWORD loop_count = 50;
+
 
     HANDLE hEvent;
     HSWDEVICE hSwDevice;
@@ -95,6 +98,16 @@ int __cdecl main(int argc, wchar_t *argv[])
     PCWSTR instanceId = L"IddSampleDriver";
     PCWSTR hardwareIds = L"IddSampleDriver\0\0";
     PCWSTR compatibleIds = L"IddSampleDriver\0\0";
+
+    if (argc > 1)
+    {
+        errno = 0;
+        DWORD temp = strtol(argv[1], nullptr, 10);
+        if (errno == 0)
+        {
+            loop_count = temp;
+        }
+    }
 
     // Lets run one test before we even create a SW device
     test_d3d11();
@@ -116,7 +129,8 @@ int __cdecl main(int argc, wchar_t *argv[])
         return -1;
     }
 
-    for(DWORD i = 0; i < 25; i++)
+    printf("Looping %u times\n", loop_count);
+    for(DWORD i = 0; i < loop_count; i++)
     {
         // Create the device
         HRESULT hr = SwDeviceCreate(L"IddSampleDriver",
